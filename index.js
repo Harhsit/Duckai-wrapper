@@ -45,12 +45,12 @@ const validateApiKey = (req, res, next) => {
     next();
 };
 
-// 📄 HOME ROUTE - DOCUMENTATION
+// 📄 HOME ROUTE
 app.get('/', (req, res) => {
     res.send("<h1>🦆 Duck AI Gateway is Live bhai!</h1><p>Use POST /api/chat to connect.</p>");
 });
 
-// 💬 MAIN CHAT API ENDPOINT (WITH VQD FALLBACK BYPASS)
+// 💬 MAIN CHAT API ENDPOINT (WITH COOKIE CAPTURING)
 app.post('/api/chat', validateApiKey, async (req, res) => {
     const { message, model } = req.body || {};
 
@@ -63,55 +63,71 @@ app.post('/api/chat', validateApiKey, async (req, res) => {
 
     const selectedModel = model || 'gpt-4o-mini';
     let vqdToken = null;
+    let cookieHeader = ""; // Isme security cookies save hongi
 
     try {
-        // 🔥 METHOD 1: Standard API Status Handshake
-        try {
-            const tokenResponse = await fetch('https://duckduckgo.com/duckchat/v1/status', {
-                method: 'GET',
-                headers: {
-                    'x-vqd-accept': '1',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-                }
-            });
-            vqdToken = tokenResponse.headers.get('x-vqd-4');
-        } catch (e) {
-            console.log("Method 1 failed, switching to smart bypass...");
-        }
+        // 🔥 STEP 1: Token status request aur cookies capture karna
+        const tokenResponse = await fetch('https://duckduckgo.com/duckchat/v1/status', {
+            method: 'GET',
+            headers: {
+                'x-vqd-accept': '1',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept': '*/*',
+                'Accept-Language': 'en-US,en;q=0.9'
+            }
+        });
+        
+        vqdToken = tokenResponse.headers.get('x-vqd-4');
 
-        // 🛡️ METHOD 2 BYPASS: Agar pehla tareeka block hua, toh main HTML se token nikalenge
-        if (!vqdToken) {
-            const bypassResponse = await fetch('https://duckduckgo.com/?q=how+to+code+an+api', {
-                headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-                }
-            });
-            const htmlText = await bypassResponse.text();
-            
-            // HTML ke andar se vqd='...' nikalne ke liye dynamic regex match
-            const vqdMatch = htmlText.match(/vqd=["']([^"']+)["']/);
-            if (vqdMatch && vqdMatch[1]) {
-                vqdToken = vqdMatch[1];
-                console.log("Bypass Successful! Found VQD Token via HTML Parsing.");
+        // Render runtime pe node key check karke saari cookies nikalna
+        if (tokenResponse.headers.getSetCookie) {
+            const rawCookies = tokenResponse.headers.getSetCookie();
+            if (rawCookies && rawCookies.length > 0) {
+                cookieHeader = rawCookies.map(c => c.split(';')[0]).join('; ');
             }
         }
 
-        // Agar dono tareeqe fail ho gaye tabhi error denge
+        // 🛡️ FALLBACK: Agar standard tarike se token na mile toh main page scrape karo
         if (!vqdToken) {
-            throw new Error("DuckDuckGo ne dono tareeqon ko block kar diya bhai! IP Rate limit issue.");
+            const bypassResponse = await fetch('https://duckduckgo.com/?q=ai+chat+online', {
+                headers: {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                    'Accept': 'text/html'
+                }
+            });
+            const htmlText = await bypassResponse.text();
+            const vqdMatch = htmlText.match(/vqd=["']([^"']+)["']/);
+            if (vqdMatch && vqdMatch[1]) {
+                vqdToken = vqdMatch[1];
+                if (bypassResponse.headers.getSetCookie) {
+                    cookieHeader = bypassResponse.headers.getSetCookie().map(c => c.split(';')[0]).join('; ');
+                }
+            }
         }
 
-        // Step 2: Chat Request with valid Token
+        if (!vqdToken) {
+            throw new Error("Handshake failed completely! DuckDuckGo refused to give VQD Token.");
+        }
+
+        // 🔥 STEP 2: Chat Request (Token + Cookies sync ke saath)
+        const chatHeaders = {
+            'Content-Type': 'application/json',
+            'x-vqd-4': vqdToken,
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept': 'text/event-stream',
+            'Origin': 'https://duckduckgo.com',
+            'Referer': 'https://duckduckgo.com/',
+            'Cache-Control': 'no-cache'
+        };
+
+        // Agar cookies mili hain toh headers me attach karo
+        if (cookieHeader) {
+            chatHeaders['Cookie'] = cookieHeader;
+        }
+
         const chatResponse = await fetch('https://duckduckgo.com/duckchat/v1/chat', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-vqd-4': vqdToken,
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                'Accept': 'text/event-stream',
-                'Origin': 'https://duckduckgo.com',
-                'Referer': 'https://duckduckgo.com/'
-            },
+            headers: chatHeaders,
             body: JSON.stringify({
                 model: selectedModel,
                 messages: [{ role: 'user', content: message }]
@@ -120,7 +136,7 @@ app.post('/api/chat', validateApiKey, async (req, res) => {
 
         if (!chatResponse.ok) {
             const errText = await chatResponse.text();
-            throw new Error(`DuckDuckGo Chat Error: ${chatResponse.status} - ${errText.slice(0, 100)}`);
+            throw new Error(`DuckDuckGo Chat Error: ${chatResponse.status} - ${errText.slice(0, 150)}`);
         }
 
         const rawText = await chatResponse.text();
