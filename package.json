@@ -1,0 +1,27 @@
+{
+  "name": "duck-ai-js-api",
+  "version": "1.0.0",
+  "description": "Professional Duck AI API Wrapper - Production Ready for Vercel & Render",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  },
+  "keywords": [
+    "duckduckgo",
+    "ai",
+    "api",
+    "wrapper",
+    "express",
+    "vercel"
+  ],
+  "author": "Bhai Dev",
+  "license": "MIT"
+}
