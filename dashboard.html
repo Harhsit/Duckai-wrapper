@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duck AI — API Keys</title>
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; color:#1a1a1a; margin:0; min-height:100vh; background: radial-gradient(640px 420px at 12% 8%, rgba(147,197,253,0.55), rgba(147,197,253,0) 60%), radial-gradient(760px 520px at 88% 88%, rgba(249,168,212,0.42), rgba(249,168,212,0) 62%), radial-gradient(520px 380px at 78% 12%, rgba(196,181,253,0.35), rgba(196,181,253,0) 60%), linear-gradient(135deg, #dbeafe 0%, #e0e7ff 35%, #ede9fe 65%, #fce7f3 100%); background-attachment: fixed; }
+  .wrap { max-width: 760px; margin: 40px auto; padding: 0 16px; }
+  .card { background: rgba(255,255,255,0.55); backdrop-filter: blur(20px) saturate(170%); -webkit-backdrop-filter: blur(20px) saturate(170%); border:1px solid rgba(255,255,255,0.75); border-radius:16px; padding:20px; margin-bottom:20px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(255,255,255,0.25), 0 12px 40px rgba(31,38,135,0.12); }
+  h1 { font-size: 24px; margin: 0 0 4px; } h2 { font-size: 17px; margin: 0 0 12px; } h3 { font-size: 15px; margin: 18px 0 8px; }
+  p.sub { color:#555; margin:0 0 8px; }
+  p, li { line-height:1.55; font-size:14.5px; }
+  ol.steps li { margin-bottom:6px; }
+  input[type=text], input[type=password] { width: 65%; padding:10px; border:1px solid rgba(255,255,255,0.7); border-radius:8px; font-size:15px; box-sizing:border-box; background: rgba(255,255,255,0.5); backdrop-filter: blur(10px) saturate(140%); -webkit-backdrop-filter: blur(10px) saturate(140%); box-shadow: inset 0 1px 0 rgba(255,255,255,0.7); color:#1a1a1a; }
+  select { width: 100%; padding:10px; border:1px solid #ccd; border-radius:8px; font-size:15px; box-sizing:border-box; background:#fff; }
+  textarea { width:100%; padding:10px; border:1px solid #ccd; border-radius:8px; font-size:15px; box-sizing:border-box; font-family:inherit; background: rgba(255,255,255,0.92); }
+  button { padding:10px 16px; border:0; border-radius:8px; background:#111; background: linear-gradient(180deg, rgba(52,52,64,0.95), rgba(10,10,14,0.95)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 6px 18px rgba(17,17,17,0.22); color:#fff; cursor:pointer; font-size:15px; }
+  button.revoke { background: rgba(255,255,255,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); color:#b00020; border:1px solid rgba(176,0,32,0.65); padding:6px 10px; font-size:13px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.7); }
+  button.copybtn { background:#fff; color:#111; border:1px solid #999; padding:5px 10px; font-size:12.5px; float:right; }
+  button:disabled { opacity:.5; }
+  .topnav { position: sticky; top: 12px; z-index: 50; display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:10px 14px; margin-bottom:20px; background: rgba(255,255,255,0.55); backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%); border:1px solid rgba(255,255,255,0.6); border-radius:999px; box-shadow: 0 8px 32px rgba(31,38,135,0.12); }
+  .topnav .brand { font-weight:700; font-size:16px; margin-right:auto; white-space:nowrap; }
+  .navlink { color:#111; text-decoration:none; font-size:14.5px; padding:9px 12px; border-radius:999px; }
+  .navlink:hover { background: rgba(255,255,255,0.7); }
+  .tabbtn { background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.65); color:#111; border:1px solid rgba(120,120,160,0.35); border-radius:999px; padding:9px 14px; font-size:14.5px; }
+  .tabbtn.active { background:#111; background: linear-gradient(180deg, rgba(52,52,64,0.95), rgba(10,10,14,0.95)); box-shadow: inset 0 1px 0 rgba(255,255,255,0.35); color:#fff; border-color:#111; }
+  .newkey { background: rgba(255,243,190,0.55); backdrop-filter: blur(12px) saturate(160%); -webkit-backdrop-filter: blur(12px) saturate(160%); border:1px solid rgba(230,194,0,0.55); border-radius:10px; padding:14px; margin-top:14px; word-break:break-all; display:none; box-shadow: inset 0 1px 0 rgba(255,255,255,0.75), 0 8px 24px rgba(230,194,0,0.12); }
+  .newkey code { font-size:15px; }
+  .warn { color:#8a6d00; font-size:13px; }
+  .danger { background:#fff1f1; border:1px solid #e5b4b4; border-radius:8px; padding:10px 12px; font-size:13.5px; color:#7a1010; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  td, th { text-align:left; padding:8px 6px; border-bottom:1px solid rgba(120,120,160,0.16); }
+  th { background: rgba(255,255,255,0.45); }
+  td { background: rgba(255,255,255,0.25); }
+  .revoked { color:#999; text-decoration: line-through; }
+  footer { color:#777; font-size:13px; line-height:1.5; }
+  code.example, pre.example { display:block; background:#f0f1f3; padding:12px; border-radius:8px; white-space:pre-wrap; word-break:break-all; font-size:13px; overflow-x:auto; margin:6px 0 4px; }
+  pre.example { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .exhead { overflow:hidden; margin-top:16px; }
+  .exhead h3 { display:inline; margin:0; }
+  .testresult { background:#f0f7f0; border:1px solid #bcd8bc; border-radius:8px; padding:12px; margin-top:12px; white-space:pre-wrap; word-break:break-all; font-size:13.5px; display:none; }
+  .testresult img { display:block; max-width:100%; height:auto; border-radius:8px; margin-top:10px; white-space:normal; }
+  .testresult.error { background:#fff1f1; border-color:#e5b4b4; }
+  label.field { display:block; font-size:13.5px; color:#444; margin:10px 0 4px; }
+  label.field + input, label.field + textarea { width:100%; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="topnav">
+    <span class="brand">🦆 Duck AI — API Keys</span>
+    <a class="navlink" href="/">Home</a>
+    <button class="tabbtn active" type="button" id="tabBtnCreate" role="tab" aria-selected="true">🔑 Create API Key</button>
+    <button class="tabbtn" type="button" id="tabBtnHowto" role="tab" aria-selected="false">📖 How to Use — Instructions</button>
+  </nav>
+
+  <div class="card">
+    <h1>🦆 Duck AI — API Keys</h1>
+    <p class="sub">Create your own API key and use it in your sites and apps, just like an OpenAI API key.</p>
+  </div>
+
+  <div id="tabCreate">
+  <div class="card" id="adminLoginCard">
+    <h2>🔐 Admin login</h2>
+    <p class="sub">Creating and managing API keys is protected — only the admin can do it. Log in with the admin username and password to continue.</p>
+    <label class="field" for="adminUser">Admin username</label>
+    <input type="text" id="adminUser" autocomplete="username" placeholder="Admin username">
+    <label class="field" for="adminPass">Admin password</label>
+    <input type="password" id="adminPass" autocomplete="current-password" placeholder="Admin password">
+    <div style="margin-top:12px;"><button id="adminLoginBtn" type="button">Log in</button></div>
+    <p id="adminLoginError" style="display:none;color:#b00020;font-size:13.5px;margin:10px 0 0;"></p>
+  </div>
+
+  <div id="adminArea" style="display:none;">
+  <div class="card" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span>🔐 Logged in as <strong>admin</strong></span>
+    <button class="revoke" id="adminLogoutBtn" type="button" style="margin-left:auto;">Logout</button>
+  </div>
+
+  <div class="card">
+    <h2>Create a new key</h2>
+    <input type="text" id="label" placeholder="Key label, e.g. My website">
+    <button id="createBtn">Create key</button>
+    <div class="newkey" id="newKeyBox">
+      <div>Your new API key:</div>
+      <code id="newKey"></code>
+      <div style="margin-top:8px;"><button id="copyBtn" type="button">Copy key</button></div>
+      <p class="warn">⚠️ Save this key now — for security it is shown only once and cannot be seen again. Only a hash of it is stored on the server.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Your keys</h2>
+    <div id="keyList">Loading…</div>
+  </div>
+  </div><!-- /adminArea -->
+  </div><!-- /tabCreate -->
+
+  <div id="tabHowto" style="display:none;">
+  <div class="card" id="howto">
+    <h2>How to use your API key</h2>
+    <p class="sub">Link your key to your own website, app, or server in four steps:</p>
+    <ol class="steps">
+      <li><strong>Your server address (base URL)</strong> is the address of this server:
+        <code class="example" id="baseUrl">(loading…)</code>
+        When you deploy this wrapper (e.g. to Vercel or Render), this becomes your deployed address — the examples below update automatically to wherever this page is served from.</li>
+      <li><strong>Send a POST request</strong> to the chat endpoint:
+        <code class="example" id="endpointUrl">POST /api/chat</code></li>
+      <li><strong>Send your key in the header</strong> — either as
+        <code>Authorization: Bearer YOUR_API_KEY</code> or as <code>x-api-key: YOUR_API_KEY</code> —
+        with <code>Content-Type: application/json</code> and a JSON body like
+        <code id="bodyExample">{"message": "Hello", "model": "gpt-5.4-mini"}</code>.
+        The <code>model</code> field is optional: older names like <code>gpt-4o-mini</code> are aliases for the current models, and if you leave it out the default model is used.</li>
+      <li><strong>Read the JSON reply:</strong>
+        <code class="example">{"status": "success", "model_used": "gpt-5.4-mini", "requested_model": "gpt-4o-mini", "reply": "Hello! How can I help?"}</code>
+        Use the <code>reply</code> text in your site or app. If the key is wrong or revoked, you get <code>401</code> with an error message instead.</li>
+    </ol>
+
+    <h3>Change the AI model — from your own site or app</h3>
+    <p>You choose the model <strong>from your external side</strong>, on every request — there is nothing to change on this server. Just set the <code>"model"</code> field in the JSON body you send to <code>POST /api/chat</code>:</p>
+    <h3>How model changing works — step by step</h3>
+    <ol class="steps">
+      <li><strong>You pick a model</strong> in your own site or app and put its id in the <code>"model"</code> field of your <code>POST /api/chat</code> request, e.g. <code>{"message": "Hello", "model": "claude-haiku-5-5"}</code>.</li>
+      <li><strong>The request reaches this server</strong> (this wrapper) together with your API key, which the server checks first.</li>
+      <li><strong>The server checks the model is valid.</strong> If you sent an old name, it is converted to the current model id automatically — e.g. <code>gpt-4o-mini</code> becomes <code>gpt-5.4-mini</code> (see the aliases list below). An unknown model gets a <code>400</code> reply listing the valid models.</li>
+      <li><strong>The server forwards your message + that model to DuckAI</strong> (DuckDuckGo) — the model you picked travels with the request.</li>
+      <li><strong>DuckAI answers using that model</strong> and sends the reply back to this server, which passes it on to your site or app.</li>
+      <li><strong><code>model_used</code> in the response confirms it</strong> — it names the model that actually answered (<code>requested_model</code> echoes what you sent). So to change the answering model, just send a different <code>"model"</code> in the next request — <strong>no server restart or redeploy is ever needed</strong>.</li>
+    </ol>
+    <label class="field" for="modelSelect">Model — changing this updates all the code examples below and the test box</label>
+    <select id="modelSelect"></select>
+    <p style="font-size:13.5px;color:#555;">The JavaScript, Python, Node.js and cURL examples below always show the model selected here, so you can copy one straight into your own site or server.</p>
+
+    <h3>Available models on Duck AI</h3>
+    <p>Every model currently listed on Duck AI — the <strong>Model id</strong> is the exact string to send in the <code>"model"</code> field. This table is loaded live from this server's <code>GET /api/models</code>, which fetches the current list from DuckDuckGo, so it stays in sync automatically. The <strong>Capabilities</strong> column shows what each model can do: normal <strong>Chat</strong>, <strong>Image input</strong> (you send it a picture — see the Images section below), and <strong>Image creation</strong> (it makes a picture for you — only the models marked Yes there, the OpenAI GPT models, can do that). Models marked <em>Subscription</em> appear on Duck AI but need a paid Duck AI plan, so they cannot answer chat requests from a free account, and their image creation is untested.</p>
+    <div id="modelsTable">Loading models…</div>
+    <h3>Old model names (aliases)</h3>
+    <p style="font-size:13.5px;color:#555;">These older ids still work — the server converts each one to the current model shown on the right:</p>
+    <div id="aliasesTable">Loading aliases…</div>
+
+    <div class="exhead"><h3>cURL (terminal / any server)</h3><button class="copybtn" type="button" data-copy="exCurl">Copy</button></div>
+    <pre class="example" id="exCurl"></pre>
+
+    <div class="exhead"><h3>JavaScript — fetch() in a website</h3><button class="copybtn" type="button" data-copy="exJs">Copy</button></div>
+    <pre class="example" id="exJs"></pre>
+    <p class="danger">⚠️ <strong>Do not expose your key in public frontend code.</strong> Anyone who opens your website can view its JavaScript and steal the key. Use the fetch example only for quick local testing — in a real website, call this API from your backend (see the Node.js example) and let your frontend talk to your own backend.</p>
+
+    <div class="exhead"><h3>Node.js — server-side (recommended)</h3><button class="copybtn" type="button" data-copy="exNode">Copy</button></div>
+    <pre class="example" id="exNode"></pre>
+
+    <div class="exhead"><h3>Python — requests</h3><button class="copybtn" type="button" data-copy="exPython">Copy</button></div>
+    <pre class="example" id="exPython"></pre>
+    <p style="font-size:13.5px;color:#555;">Tip: after you create a key on the “Create API Key” tab, the examples on this page are filled in with your new key automatically — just for this page view. The key is never stored by this page; reload and it's gone.</p>
+  </div>
+
+  <div class="card" id="images">
+    <h2>Images</h2>
+    <h3>Image creation — ask DuckAI to make a picture</h3>
+    <p class="sub"><strong>Supported — with the image creation models.</strong> Only these models can create images on a free Duck AI account (they are the ones marked <em>Image creation: Yes</em> in the models table above):</p>
+    <ul>
+      <li><code>gpt-5.4-mini</code> — OpenAI GPT-5.4 Mini</li>
+      <li><code>gpt-6-luna</code> — OpenAI GPT-6 Luna</li>
+    </ul>
+    <p class="sub">(The subscription GPT models <code>gpt-5.6-terra</code> and <code>gpt-5.6-sol</code> are also OpenAI GPT family, but they need a paid Duck AI plan and are untested from a free account.)</p>
+    <ol class="steps">
+      <li><strong>Pick an image creation model</strong> — set <code>"model": "gpt-5.4-mini"</code> (or <code>"gpt-6-luna"</code>) in your <code>POST /api/chat</code> body.</li>
+      <li><strong>Ask for a picture</strong> in your message — for example <em>"Generate an image of a red cat sitting on a chair"</em>. To force image creation, also add <code>"generateImage": true</code> to the body.</li>
+      <li><strong>Read the <code>images</code> array</strong> in the JSON response. Each generated image comes back with <code>b64_image</code> (raw base64) plus a ready-to-use <code>data_url</code> — put <code>images[0].data_url</code> straight into an <code>&lt;img src&gt;</code>. It also carries <code>format</code>, <code>width</code> and <code>height</code>. Note: the text <code>reply</code> may be empty when DuckAI returns only an image — always check <code>images</code> too.</li>
+    </ol>
+    <p class="sub">Other models — Claude, Mistral and the Tinfoil models — <strong>cannot create images</strong>: ask them for a picture and they simply answer in text saying they can't generate images. The test box below displays returned images under the reply, so you can try it right here with a GPT model.</p>
+    <div class="exhead"><h3>Image creation — JavaScript (fetch)</h3><button class="copybtn" type="button" data-copy="exImgJs">Copy</button></div>
+    <pre class="example" id="exImgJs"></pre>
+    <div class="exhead"><h3>Image creation — Node.js (server-side)</h3><button class="copybtn" type="button" data-copy="exImgNode">Copy</button></div>
+    <pre class="example" id="exImgNode"></pre>
+    <div class="exhead"><h3>Image creation — Python (requests)</h3><button class="copybtn" type="button" data-copy="exImgPython">Copy</button></div>
+    <pre class="example" id="exImgPython"></pre>
+    <div class="exhead"><h3>Image creation — cURL</h3><button class="copybtn" type="button" data-copy="exImgCurl">Copy</button></div>
+    <pre class="example" id="exImgCurl"></pre>
+
+    <h3>Image input — send a picture with your message</h3>
+    <p class="sub"><strong>Image input — supported.</strong> Send an image <em>with</em> your message and DuckAI will look at it and answer about it. Add an <code>image</code> field to your <code>POST /api/chat</code> body containing a <strong>data URL</strong>: <code>"image": "data:image/png;base64,...."</code> — or <code>"images": [ ... ]</code> for up to 4 images (PNG/JPEG/WebP/GIF, max 5 MB each). Use a vision-capable model — <code>gpt-5.4-mini</code>, <code>claude-haiku-5-5</code> and <code>tinfoil/gemma4-31b</code> work; <code>mistral-small-2603</code> does not accept images and returns a clear 400. Bad image data also returns 400 with the reason. The test box below has an attach button so you can try it right here.</p>
+    <div class="exhead"><h3>Image input — JavaScript (fetch)</h3></div>
+    <pre class="example">// In a browser you can read a picked file as a data URL:
+const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(file); });
+const resp = await fetch(SERVER + '/api/chat', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' },
+  body: JSON.stringify({ message: 'What is in this image?', model: 'gpt-5.4-mini', image: dataUrl })
+});
+console.log((await resp.json()).reply);</pre>
+    <div class="exhead"><h3>Image input — Node.js (server-side)</h3></div>
+    <pre class="example">import fs from 'node:fs';
+const dataUrl = 'data:image/png;base64,' + fs.readFileSync('photo.png').toString('base64');
+const resp = await fetch(SERVER + '/api/chat', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer ' + process.env.DUCK_API_KEY, 'Content-Type': 'application/json' },
+  body: JSON.stringify({ message: 'Describe this image.', model: 'claude-haiku-5-5', image: dataUrl })
+});
+console.log((await resp.json()).reply);</pre>
+    <div class="exhead"><h3>Image input — Python (requests)</h3></div>
+    <pre class="example">import base64, requests
+with open('photo.png', 'rb') as f:
+    data_url = 'data:image/png;base64,' + base64.b64encode(f.read()).decode()
+r = requests.post(SERVER + '/api/chat',
+    headers={'Authorization': 'Bearer ' + API_KEY},
+    json={'message': 'What colors are in this image?', 'model': 'gpt-5.4-mini', 'image': data_url})
+print(r.json()['reply'])</pre>
+    <div class="exhead"><h3>Image input — cURL</h3></div>
+    <pre class="example"># Build the JSON with the data URL in the "image" field (jq shown; any JSON builder works):
+jq -n --arg img "data:image/png;base64,$(base64 -w0 photo.png)" \
+  '{message: "What is in this image?", model: "gpt-5.4-mini", image: $img}' | \
+curl -X POST SERVER/api/chat -H "Authorization: Bearer YOUR_API_KEY" \
+  -H 'Content-Type: application/json' -d @-</pre>
+  </div>
+
+  <div class="card" id="testkey">
+    <h2>Test your key</h2>
+    <p class="sub">Paste a key, type a message, and send it to this server's <code>POST /api/chat</code> — this is the link test that proves your key + this server work together.</p>
+    <label class="field" for="testKey">API key</label>
+    <input type="password" id="testKey" placeholder="duck-..." autocomplete="off">
+    <label class="field" for="testModel">AI model — DuckAI will answer with the model you pick here</label>
+    <select id="testModel"></select>
+    <label class="field" for="testMessage">Message</label>
+    <textarea id="testMessage" rows="2">Say hello in exactly one short sentence.</textarea>
+    <label class="field" for="testImage">Attach an image (optional) — DuckAI will see it and answer about it. Use a vision-capable model above.</label>
+    <input type="file" id="testImage" accept="image/png,image/jpeg,image/webp,image/gif">
+    <img id="testImagePreview" alt="" style="display:none;max-width:240px;border-radius:8px;margin-top:8px;">
+    <div style="margin-top:12px;"><button id="testBtn" type="button">Send test message</button></div>
+    <div class="testresult" id="testResult"></div>
+  </div>
+  </div><!-- /tabHowto -->
+
+  <footer>
+    <p><strong>Security note for the site owner:</strong> key management on this dashboard (creating, listing and revoking API keys) is protected by the single admin login — nobody can create or revoke keys without it. Using a key to chat via <code>POST /api/chat</code> does not need the admin login, only the API key itself.</p>
+  </footer>
+</div>
+<script>
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=String(s||''); return d.innerHTML; }
+
+var BASE = window.location.origin;
+var exampleKey = 'YOUR_API_KEY';
+var selectedModel = 'gpt-5.4-mini';
+// Fallback list, used only if GET /api/models cannot be reached.
+var FALLBACK_MODELS = [
+  { id: 'gpt-5.4-mini', name: 'OpenAI GPT-5.4 Mini', tag: 'Default & Fastest', available: true, capabilities: { chat: true, image_input: true, image_creation: true }, image_creation_note: null },
+  { id: 'gpt-6-luna', name: 'OpenAI GPT-6 Luna', tag: 'Latest', available: true, capabilities: { chat: true, image_input: true, image_creation: true }, image_creation_note: null },
+  { id: 'tinfoil/gpt-oss-120b', name: 'OpenAI OSS 120B (Tinfoil)', tag: 'Open Source', available: true, capabilities: { chat: true, image_input: false, image_creation: false }, image_creation_note: null },
+  { id: 'claude-haiku-5-5', name: 'Anthropic Claude Haiku 5.5', tag: 'Smart', available: true, capabilities: { chat: true, image_input: true, image_creation: false }, image_creation_note: null },
+  { id: 'tinfoil/gemma4-31b', name: 'Google Gemma 4 31B (Tinfoil)', tag: 'Open Weights', available: true, capabilities: { chat: true, image_input: true, image_creation: false }, image_creation_note: null },
+  { id: 'mistral-small-2603', name: 'Mistral Small 2603', tag: 'Efficient', available: true, capabilities: { chat: true, image_input: false, image_creation: false }, image_creation_note: null }
+];
+var FALLBACK_ALIASES = {
+  'gpt-4o-mini': 'gpt-5.4-mini',
+  'gpt-5-mini': 'gpt-5.4-mini',
+  'gpt-oss-120b': 'tinfoil/gpt-oss-120b',
+  'claude-4.5-haiku': 'claude-haiku-5-5',
+  'claude-4-5-haiku': 'claude-haiku-5-5',
+  'llama-4-scout': 'tinfoil/gemma4-31b',
+  'mistral-small-3-24b': 'mistral-small-2603'
+};
+
+function capYesNo(v) { return v === true ? 'Yes' : (v === false ? 'No' : 'Not tested'); }
+
+function renderCapabilities(m) {
+  // Prefer the server's curated capabilities; fall back to the raw flags.
+  const caps = m.capabilities || {
+    chat: true,
+    image_input: typeof m.supports_image_upload === 'boolean' ? m.supports_image_upload : null,
+    image_creation: typeof m.image_generation === 'boolean' ? m.image_generation : null
+  };
+  let creation = capYesNo(caps.image_creation);
+  if (caps.image_creation === null || caps.image_creation === undefined) {
+    creation = m.image_creation_note ? escapeHtml(m.image_creation_note) : 'Not tested';
+  }
+  return 'Chat: ' + capYesNo(caps.chat) +
+    '<br>Image input (send images): ' + capYesNo(caps.image_input) +
+    '<br>Image creation: ' + creation;
+}
+
+function renderModelsTable(models) {
+  const box = document.getElementById('modelsTable');
+  if (!box) return;
+  if (!models || !models.length) { box.textContent = 'Could not load the models list.'; return; }
+  let html = '<table><tr><th>Model id — send this</th><th>Name</th><th>Notes</th><th>Capabilities</th><th>Status</th></tr>';
+  models.forEach(function(m) {
+    const usable = m.available !== false;
+    html += '<tr>' +
+      '<td><code>' + escapeHtml(m.id) + '</code></td>' +
+      '<td>' + escapeHtml(m.name || m.id) + '</td>' +
+      '<td>' + escapeHtml(m.tag || '') + '</td>' +
+      '<td>' + renderCapabilities(m) + '</td>' +
+      '<td>' + (usable ? 'Available' : 'Subscription') + '</td>' +
+      '</tr>';
+  });
+  box.innerHTML = html + '</table>';
+}
+
+function renderAliasesTable(aliases) {
+  const box = document.getElementById('aliasesTable');
+  if (!box) return;
+  const keys = aliases ? Object.keys(aliases) : [];
+  if (!keys.length) { box.textContent = 'No aliases.'; return; }
+  let html = '<table><tr><th>Old name you send</th><th>Current model used</th></tr>';
+  keys.forEach(function(oldId) {
+    html += '<tr><td><code>' + escapeHtml(oldId) + '</code></td><td><code>' + escapeHtml(aliases[oldId]) + '</code></td></tr>';
+  });
+  box.innerHTML = html + '</table>';
+}
+
+function populateModelSelects(models) {
+  ['modelSelect', 'testModel'].forEach(function(selId) {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    sel.innerHTML = '';
+    models.forEach(function(m) {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.name + ' (' + m.id + ')' + (m.tag ? ' — ' + m.tag : '');
+      sel.appendChild(opt);
+    });
+    sel.value = selectedModel;
+  });
+}
+
+function setSelectedModel(id, source) {
+  if (id) selectedModel = id;
+  ['modelSelect', 'testModel'].forEach(function(selId) {
+    if (selId === source) return;
+    const sel = document.getElementById(selId);
+    if (sel) sel.value = selectedModel;
+  });
+  buildExamples();
+}
+
+async function loadModels() {
+  populateModelSelects(FALLBACK_MODELS);
+  renderModelsTable(FALLBACK_MODELS);
+  renderAliasesTable(FALLBACK_ALIASES);
+  try {
+    const r = await fetch(BASE + '/api/models');
+    const data = await r.json();
+    if (data && Array.isArray(data.models) && data.models.length) {
+      if (data.default_model) selectedModel = data.default_model;
+      // Dropdowns/test box: only models Duck AI lets this account use;
+      // the table above it shows ALL models, including subscription ones.
+      const usable = data.models.filter(function(m) { return m.available !== false; });
+      populateModelSelects(usable.length ? usable : data.models);
+      renderModelsTable(data.models);
+      if (data.aliases) renderAliasesTable(data.aliases);
+      buildExamples();
+    }
+  } catch (e) { /* fallback list already populated */ }
+}
+
+function buildExamples() {
+  document.getElementById('baseUrl').textContent = BASE;
+  document.getElementById('endpointUrl').textContent = 'POST ' + BASE + '/api/chat';
+  const bodyEx = document.getElementById('bodyExample');
+  if (bodyEx) bodyEx.textContent = '{"message": "Hello", "model": "' + selectedModel + '"}';
+  document.getElementById('exCurl').textContent =
+'curl -X POST "' + BASE + '/api/chat" \\\n' +
+'  -H "Authorization: Bearer ' + exampleKey + '" \\\n' +
+'  -H "Content-Type: application/json" \\\n' +
+'  -d \'{"message": "Hello", "model": "' + selectedModel + '"}\'';
+  document.getElementById('exJs').textContent =
+'// Quick test only — do NOT ship a real key in public website code (see warning below).\n' +
+'const res = await fetch("' + BASE + '/api/chat", {\n' +
+'  method: "POST",\n' +
+'  headers: {\n' +
+'    "Authorization": "Bearer ' + exampleKey + '",\n' +
+'    "Content-Type": "application/json"\n' +
+'  },\n' +
+'  body: JSON.stringify({ message: "Hello", model: "' + selectedModel + '" })\n' +
+'});\n' +
+'const data = await res.json();\n' +
+'console.log(data.reply); // the AI reply text';
+  document.getElementById('exNode').textContent =
+'// Run on YOUR server, so the key stays secret. Set it in an env var:\n' +
+'//   DUCK_API_KEY=' + exampleKey + ' node server.js\n' +
+'const res = await fetch("' + BASE + '/api/chat", {\n' +
+'  method: "POST",\n' +
+'  headers: {\n' +
+'    "x-api-key": process.env.DUCK_API_KEY,\n' +
+'    "Content-Type": "application/json"\n' +
+'  },\n' +
+'  body: JSON.stringify({ message: "Hello", model: "' + selectedModel + '" })\n' +
+'});\n' +
+'const data = await res.json();\n' +
+'console.log(data.reply);';
+  document.getElementById('exPython').textContent =
+'# pip install requests\n' +
+'import requests\n\n' +
+'resp = requests.post(\n' +
+'    "' + BASE + '/api/chat",\n' +
+'    headers={\n' +
+'        "Authorization": "Bearer ' + exampleKey + '",\n' +
+'        "Content-Type": "application/json",\n' +
+'    },\n' +
+'    json={"message": "Hello", "model": "' + selectedModel + '"},\n' +
+')\n' +
+'print(resp.json()["reply"])';
+  // Image creation examples — the model is fixed to gpt-5.4-mini on
+  // purpose: image creation only works with the image creation models
+  // (gpt-5.4-mini / gpt-6-luna), not with the model selected above.
+  const imgJs = document.getElementById('exImgJs');
+  if (imgJs) imgJs.textContent =
+'// Image creation — the model MUST be an image creation model (gpt-5.4-mini or gpt-6-luna).\n' +
+'const res = await fetch("' + BASE + '/api/chat", {\n' +
+'  method: "POST",\n' +
+'  headers: {\n' +
+'    "Authorization": "Bearer ' + exampleKey + '",\n' +
+'    "Content-Type": "application/json"\n' +
+'  },\n' +
+'  body: JSON.stringify({\n' +
+'    message: "Generate an image of a red cat sitting on a chair",\n' +
+'    model: "gpt-5.4-mini",\n' +
+'    generateImage: true\n' +
+'  })\n' +
+'});\n' +
+'const data = await res.json();\n' +
+'// The picture comes back in data.images — put data_url straight into an <img>:\n' +
+'if (data.images && data.images.length) {\n' +
+'  document.querySelector("#result").src = data.images[0].data_url;\n' +
+'}';
+  const imgNode = document.getElementById('exImgNode');
+  if (imgNode) imgNode.textContent =
+'// Run on YOUR server, so the key stays secret. Set it in an env var:\n' +
+'//   DUCK_API_KEY=' + exampleKey + ' node server.js\n' +
+'import fs from "node:fs"; // only needed to save the picture to a file\n\n' +
+'const res = await fetch("' + BASE + '/api/chat", {\n' +
+'  method: "POST",\n' +
+'  headers: {\n' +
+'    "x-api-key": process.env.DUCK_API_KEY,\n' +
+'    "Content-Type": "application/json"\n' +
+'  },\n' +
+'  body: JSON.stringify({\n' +
+'    message: "Generate an image of a red cat sitting on a chair",\n' +
+'    model: "gpt-5.4-mini", // image creation model (or "gpt-6-luna")\n' +
+'    generateImage: true\n' +
+'  })\n' +
+'});\n' +
+'const data = await res.json();\n' +
+'if (data.images && data.images.length) {\n' +
+'  fs.writeFileSync("cat.jpg", Buffer.from(data.images[0].b64_image, "base64"));\n' +
+'  console.log("Saved cat.jpg", data.images[0].width + "x" + data.images[0].height);\n' +
+'}';
+  const imgPython = document.getElementById('exImgPython');
+  if (imgPython) imgPython.textContent =
+'# pip install requests\n' +
+'import base64, requests\n\n' +
+'resp = requests.post(\n' +
+'    "' + BASE + '/api/chat",\n' +
+'    headers={\n' +
+'        "Authorization": "Bearer ' + exampleKey + '",\n' +
+'        "Content-Type": "application/json",\n' +
+'    },\n' +
+'    json={\n' +
+'        "message": "Generate an image of a red cat sitting on a chair",\n' +
+'        "model": "gpt-5.4-mini",  # image creation model (or "gpt-6-luna")\n' +
+'        "generateImage": True,\n' +
+'    },\n' +
+')\n' +
+'data = resp.json()\n' +
+'if data.get("images"):\n' +
+'    img = data["images"][0]\n' +
+'    print(img["data_url"][:60] + "...")  # ready to use as an <img src>\n' +
+'    with open("cat.jpg", "wb") as f:     # or save the picture as a file\n' +
+'        f.write(base64.b64decode(img["b64_image"]))';
+  const imgCurl = document.getElementById('exImgCurl');
+  if (imgCurl) imgCurl.textContent =
+'curl -X POST "' + BASE + '/api/chat" \\\n' +
+'  -H "Authorization: Bearer ' + exampleKey + '" \\\n' +
+'  -H "Content-Type: application/json" \\\n' +
+'  -d \'{"message": "Generate an image of a red cat sitting on a chair", "model": "gpt-5.4-mini", "generateImage": true}\' \\\n' +
+'  | jq -r \'.images[0].data_url\'   # the picture, as a data URL for an <img src>';
+}
+
+// 🔐 Admin login gate for key management. The server checks the
+// credentials and sets an httpOnly session cookie; this page only
+// shows/hides the panels. Any 401 from the /api/keys endpoints
+// drops the page back to the login panel.
+function showAdminLogin(msg) {
+  document.getElementById('adminLoginCard').style.display = '';
+  document.getElementById('adminArea').style.display = 'none';
+  const err = document.getElementById('adminLoginError');
+  if (msg) { err.textContent = msg; err.style.display = ''; } else { err.style.display = 'none'; }
+}
+function showAdminArea() {
+  document.getElementById('adminLoginCard').style.display = 'none';
+  document.getElementById('adminArea').style.display = '';
+  document.getElementById('adminLoginError').style.display = 'none';
+}
+async function checkAdminStatus() {
+  try {
+    const r = await fetch('/api/admin/status');
+    const data = await r.json();
+    if (data.logged_in) { showAdminArea(); loadKeys(); }
+    else showAdminLogin(data.admin_configured === false ? 'Admin password is not configured on this server — key management is disabled until the owner sets it.' : null);
+  } catch (e) { showAdminLogin('Could not reach the server: ' + e.message); }
+}
+async function doAdminLogin() {
+  const username = document.getElementById('adminUser').value.trim();
+  const password = document.getElementById('adminPass').value;
+  const err = document.getElementById('adminLoginError');
+  const btn = document.getElementById('adminLoginBtn');
+  err.style.display = 'none';
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/admin/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok) {
+      document.getElementById('adminPass').value = '';
+      showAdminArea();
+      loadKeys();
+    } else {
+      err.textContent = data.message || ('Login failed (HTTP ' + r.status + ')');
+      err.style.display = '';
+    }
+  } catch (e) {
+    err.textContent = 'Could not reach the server: ' + e.message;
+    err.style.display = '';
+  }
+  btn.disabled = false;
+}
+document.getElementById('adminLoginBtn').addEventListener('click', doAdminLogin);
+document.getElementById('adminPass').addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdminLogin(); });
+document.getElementById('adminUser').addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdminLogin(); });
+document.getElementById('adminLogoutBtn').addEventListener('click', async () => {
+  try { await fetch('/api/admin/logout', { method: 'POST' }); } catch (e) {}
+  showAdminLogin();
+});
+
+async function loadKeys() {
+  const box = document.getElementById('keyList');
+  try {
+    const r = await fetch('/api/keys');
+    if (r.status === 401) { showAdminLogin('Your admin session has ended — please log in again.'); return; }
+    const data = await r.json();
+    if (!data.keys || !data.keys.length) { box.textContent = 'No keys yet. Create one above.'; return; }
+    let html = '<table><tr><th>Label</th><th>Key</th><th>Created</th><th>Status</th><th></th></tr>';
+    for (const k of data.keys) {
+      html += '<tr>' +
+        '<td class="' + (k.revoked ? 'revoked' : '') + '">' + escapeHtml(k.label) + '</td>' +
+        '<td><code>' + escapeHtml(k.masked_key) + '</code></td>' +
+        '<td>' + new Date(k.created_at).toLocaleString() + '</td>' +
+        '<td>' + (k.revoked ? 'Revoked' : 'Active') + '</td>' +
+        '<td>' + (k.revoked ? '' : '<button class="revoke" onclick="revokeKey(\'' + k.id + '\')">Revoke</button>') + '</td>' +
+        '</tr>';
+    }
+    box.innerHTML = html + '</table>';
+  } catch (e) { box.textContent = 'Could not load keys: ' + e.message; }
+}
+async function revokeKey(id) {
+  if (!confirm('Revoke this key? Apps using it will stop working.')) return;
+  const r = await fetch('/api/keys/' + encodeURIComponent(id), { method: 'DELETE' });
+  if (r.status === 401) { showAdminLogin('Your admin session has ended — please log in again.'); return; }
+  loadKeys();
+}
+document.getElementById('createBtn').addEventListener('click', async () => {
+  const label = document.getElementById('label').value.trim() || 'Untitled key';
+  const btn = document.getElementById('createBtn'); btn.disabled = true;
+  try {
+    const r = await fetch('/api/keys', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({label}) });
+    const data = await r.json();
+    if (r.status === 401) { showAdminLogin('Your admin session has ended — please log in again.'); }
+    else if (data.api_key) {
+      document.getElementById('newKey').textContent = data.api_key;
+      document.getElementById('newKeyBox').style.display = 'block';
+      // Fill the examples + test box with the new key — this page view only, never stored.
+      exampleKey = data.api_key;
+      buildExamples();
+      document.getElementById('testKey').value = data.api_key;
+    } else { alert('Could not create key: ' + (data.message || r.status)); }
+  } catch(e) { alert('Could not create key: ' + e.message); }
+  btn.disabled = false; loadKeys();
+});
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(document.getElementById('newKey').textContent); alert('Copied!'); } catch(e) {}
+});
+function showTab(which) {
+  const create = which === 'create';
+  document.getElementById('tabCreate').style.display = create ? '' : 'none';
+  document.getElementById('tabHowto').style.display = create ? 'none' : '';
+  document.getElementById('tabBtnCreate').classList.toggle('active', create);
+  document.getElementById('tabBtnHowto').classList.toggle('active', !create);
+  document.getElementById('tabBtnCreate').setAttribute('aria-selected', create ? 'true' : 'false');
+  document.getElementById('tabBtnHowto').setAttribute('aria-selected', create ? 'false' : 'true');
+  try { history.replaceState(null, '', create ? '#keys' : '#howto'); } catch(e) {}
+}
+function applyHash() {
+  // Deep links: /dashboard#howto opens Instructions; #keys (or no hash) opens Create API Key.
+  showTab(window.location.hash === '#howto' ? 'howto' : 'create');
+}
+document.getElementById('tabBtnCreate').addEventListener('click', () => showTab('create'));
+document.getElementById('tabBtnHowto').addEventListener('click', () => showTab('howto'));
+window.addEventListener('hashchange', applyHash);
+applyHash();
+document.querySelectorAll('.copybtn').forEach(function(btn) {
+  btn.addEventListener('click', async () => {
+    const el = document.getElementById(btn.getAttribute('data-copy'));
+    try { await navigator.clipboard.writeText(el.textContent); btn.textContent = 'Copied!'; setTimeout(() => { btn.textContent = 'Copy'; }, 1500); } catch(e) {}
+  });
+});
+document.getElementById('modelSelect').addEventListener('change', (e) => { setSelectedModel(e.target.value, 'modelSelect'); });
+document.getElementById('testModel').addEventListener('change', (e) => { setSelectedModel(e.target.value, 'testModel'); });
+let testImageDataUrl = null;
+document.getElementById('testImage').addEventListener('change', (e) => {
+  const f = e.target.files && e.target.files[0];
+  const prev = document.getElementById('testImagePreview');
+  testImageDataUrl = null;
+  if (!f) { prev.style.display = 'none'; return; }
+  const r = new FileReader();
+  r.onload = () => { testImageDataUrl = r.result; prev.src = r.result; prev.style.display = 'block'; };
+  r.readAsDataURL(f);
+});
+document.getElementById('testBtn').addEventListener('click', async () => {
+  const key = document.getElementById('testKey').value.trim();
+  const message = document.getElementById('testMessage').value.trim();
+  const testModel = document.getElementById('testModel').value || selectedModel;
+  const out = document.getElementById('testResult');
+  const btn = document.getElementById('testBtn');
+  out.style.display = 'block'; out.className = 'testresult'; out.textContent = 'Sending…';
+  if (!key) { out.className = 'testresult error'; out.textContent = 'Paste your API key first (or create one on the Create API Key tab).'; return; }
+  if (!message) { out.className = 'testresult error'; out.textContent = 'Type a message first.'; return; }
+  btn.disabled = true;
+  try {
+    const payload = { message: message, model: testModel };
+    if (testImageDataUrl) payload.image = testImageDataUrl;
+    const r = await fetch(BASE + '/api/chat', { method:'POST', headers:{ 'Authorization':'Bearer ' + key, 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+    const data = await r.json().catch(() => ({}));
+    const imgs = Array.isArray(data.images) ? data.images : [];
+    if (r.ok && (data.reply || imgs.length)) {
+      out.className = 'testresult';
+      out.textContent = '✅ It works — HTTP ' + r.status + ' from ' + BASE + '/api/chat\nModel requested: ' + (data.requested_model || testModel) + '\nModel used: ' + (data.model_used || '') + ' — DuckAI answered with the model you picked.\nReply: ' + (data.reply || '(no text — image only)') + (imgs.length ? '\nImages returned: ' + imgs.length : '');
+      // Render any images DuckAI returned (generated base64 data_urls, or URLs)
+      imgs.forEach(function(img) {
+        const el = document.createElement('img');
+        el.src = img.data_url || img.url || '';
+        el.alt = img.alt || 'Image returned by DuckAI';
+        if (el.src) out.appendChild(el);
+      });
+    } else {
+      out.className = 'testresult error';
+      out.textContent = '❌ HTTP ' + r.status + ' — ' + (data.message || 'request failed') + (r.status === 401 ? '\nThat means this key is not valid for this server (wrong, or revoked).' : '');
+    }
+  } catch(e) {
+    out.className = 'testresult error';
+    out.textContent = '❌ Could not reach the server: ' + e.message;
+  }
+  btn.disabled = false;
+});
+buildExamples();
+loadModels();
+checkAdminStatus();
+</script>
+</body>
+</html>
