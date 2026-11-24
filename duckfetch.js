@@ -29,7 +29,16 @@
 //     step fails and why.
 
 let ProxyAgent = null;
-try { ({ ProxyAgent } = require('undici')); } catch (e) { /* handled below */ }
+let undiciFetch = null;
+try { ({ ProxyAgent, fetch: undiciFetch } = require('undici')); } catch (e) { /* handled below */ }
+
+// IMPORTANT: always use undici's OWN fetch together with its
+// ProxyAgent. Node's built-in fetch is a DIFFERENT undici version
+// bundled inside Node, and handing it a dispatcher built by the npm
+// undici package fails on some Node versions with
+//   UND_ERR_INVALID_ARG "invalid onError method"
+// (seen live on Render, Nov 2026). Pairing the npm package's fetch
+// with its own ProxyAgent keeps the versions matched everywhere.
 
 const RAW_PROXY = String(process.env.DUCK_PROXY || process.env.HTTPS_PROXY || process.env.https_proxy || '').trim();
 const TIMEOUT_MS = (() => {
@@ -77,8 +86,9 @@ async function duckFetch(url, options = {}, step = 'fetch') {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     const method = (options.method || 'GET').toUpperCase();
+    const doFetch = undiciFetch || fetch;
     try {
-        const res = await fetch(url, {
+        const res = await doFetch(url, {
             ...options,
             ...(dispatcher ? { dispatcher } : {}),
             signal: controller.signal,
