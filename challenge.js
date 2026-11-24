@@ -21,6 +21,7 @@
 
 const vm = require('vm');
 const crypto = require('crypto');
+const { duckFetch } = require('./duckfetch');
 
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
@@ -236,7 +237,7 @@ function makeWindow(isTop, sharedNavigator) {
 
 // Fetch a fresh challenge and solve it. Returns { token, rawClientHashes }.
 async function solveChallenge() {
-  const res = await fetch(`${ORIGIN}/duckchat/v1/status`, {
+  const res = await duckFetch(`${ORIGIN}/duckchat/v1/status`, {
     method: 'GET',
     headers: {
       'x-vqd-accept': '1',
@@ -244,7 +245,7 @@ async function solveChallenge() {
       Accept: '*/*',
       'Accept-Language': 'en-US,en;q=0.9',
     },
-  });
+  }, 'challenge-status');
   if (res.status !== 200) throw new Error(`status endpoint HTTP ${res.status}`);
   const challengeB64 = res.headers.get('x-vqd-hash-1');
   if (!challengeB64) throw new Error('status endpoint returned no x-vqd-hash-1 challenge header');

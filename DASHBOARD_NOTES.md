@@ -898,3 +898,30 @@ four steps:
   keys (keys.json) are for local use (or a host with a permanent
   disk); on serverless hosts they can be wiped on restart. Using
   either key is identical (Authorization: Bearer / x-api-key header).
+
+## Proxy support, timeouts, step logging (duckfetch.js)
+
+Added at Harshit's request after the hosted deployments failed in two
+different ways (Vercel: DuckDuckGo 418 ERR_BN_LIMIT; Render: chat hung
+~112s then HTTP 500 "fetch failed"). All DuckDuckGo requests now go
+through one helper, `duckfetch.js`:
+
+- **Proxy**: env `DUCK_PROXY` (fallback `HTTPS_PROXY`) — an
+  http/https proxy URL (undici ProxyAgent, new dependency). All
+  DuckDuckGo steps (challenge-status, models, chat) use it, so
+  DuckDuckGo sees the proxy's IP instead of the host's datacenter IP.
+  A residential proxy is the intended use. Credentials are masked in
+  logs; if the proxy/undici is unusable the server logs it and
+  continues direct rather than crashing.
+- **Timeouts**: every DuckDuckGo fetch aborts after
+  `DUCK_FETCH_TIMEOUT_MS` (default 20000). `/api/chat` additionally
+  has an overall budget `DUCK_CHAT_BUDGET_MS` (default 90000) across
+  its challenge retries, so a bad route fails in bounded time with a
+  clear error instead of hanging for minutes.
+- **Logging**: each DuckDuckGo request logs
+  `[duck] step=<name> METHOD url -> status in Nms (proxy: on/off)`;
+  failures log the step, duration, and the underlying cause chain
+  (name/code/message), and the thrown error names the failed step.
+  Startup logs the route config once (proxy masked).
+- The dashboard How to Use section documents DUCK_PROXY and the two
+  tuning variables in the "Reach this server" area.

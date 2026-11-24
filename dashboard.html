@@ -126,6 +126,8 @@
       <li><strong>Either way, using a key is identical:</strong> send it as <code>Authorization: Bearer YOUR_API_KEY</code> (or <code>x-api-key: YOUR_API_KEY</code>) with your <code>POST /api/chat</code> request — see the steps and copy-paste examples below. A wrong or revoked key gets <code>401</code>.</li>
     </ul>
 
+    <p class="sub"><strong>If DuckDuckGo limits your hosting provider's IPs</strong> (chat returns <code>418</code>, or fails/hangs even though the key is accepted): the problem is the route, not your key. Set <code>DUCK_PROXY</code> in the server's environment variables to a proxy address (for example a residential proxy, <code>http://user:pass@host:port</code>) and redeploy/restart — all of this server's DuckDuckGo requests then go through that proxy, so DuckDuckGo sees the proxy's IP instead of the host's. Optional tuning: <code>DUCK_FETCH_TIMEOUT_MS</code> (per-request timeout, default 20000) and <code>DUCK_CHAT_BUDGET_MS</code> (total chat budget, default 90000). The server logs mark every DuckDuckGo step (<code>[duck] step=…</code>) so you can see exactly which step fails.</p>
+
     <p class="sub">Link your key to your own website, app, or server in four steps:</p>
     <ol class="steps">
       <li><strong>Your server address (base URL)</strong> is the address of this server:

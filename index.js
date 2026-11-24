@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { solveChallenge, USER_AGENT } = require('./challenge');
+const { duckFetch } = require('./duckfetch');
 
 const app = express();
 
@@ -441,9 +442,9 @@ async function fetchLiveModels() {
     if (liveModelsCache && (Date.now() - liveModelsCache.at) < LIVE_MODELS_CACHE_MS) {
         return liveModelsCache.models;
     }
-    const res = await fetch(LIVE_MODELS_URL, {
+    const res = await duckFetch(LIVE_MODELS_URL, {
         headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' }
-    });
+    }, 'models');
     if (!res.ok) throw new Error(`live models endpoint HTTP ${res.status}`);
     const data = await res.json();
     if (!data || !Array.isArray(data.models) || !data.models.length) {
@@ -943,15 +944,31 @@ app.post('/api/chat', validateApiKey, async (req, res) => {
     const wantImage = !!(req.body && (req.body.generateImage === true || req.body.image === true));
 
     const MAX_ATTEMPTS = 8;
+    // Overall time budget for one /api/chat request (env
+    // DUCK_CHAT_BUDGET_MS, default 90000): with per-fetch timeouts in
+    // duckfetch.js this stops a bad route to DuckDuckGo from hanging
+    // the request for minutes — attempts stop once the budget is spent
+    // and the caller gets the last error, whose message names the
+    // DuckDuckGo step that failed.
+    const CHAT_BUDGET_MS = (() => {
+        const n = parseInt(process.env.DUCK_CHAT_BUDGET_MS || '', 10);
+        return Number.isFinite(n) ? Math.min(Math.max(n, 5000), 600000) : 90000;
+    })();
+    const chatStartedAt = Date.now();
     let lastError = null;
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        if (attempt > 1 && Date.now() - chatStartedAt > CHAT_BUDGET_MS) {
+            console.error(`[duck] chat budget of ${CHAT_BUDGET_MS}ms spent after ${attempt - 1} attempts — giving up`);
+            break;
+        }
+        console.log(`[duck] chat attempt ${attempt}/${MAX_ATTEMPTS} model=${selectedModel}`);
         try {
             // 🔥 STEP 1: Solve a fresh challenge for this attempt
             const { token } = await solveChallenge();
 
             // 🔥 STEP 2: Chat request with the solved token
-            const chatResponse = await fetch('https://duckduckgo.com/duckchat/v1/chat', {
+            const chatResponse = await duckFetch('https://duckduckgo.com/duckchat/v1/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -981,7 +998,7 @@ app.post('/api/chat', validateApiKey, async (req, res) => {
                         metadata: { toolChoice: { GenerateImage: true } }
                     } : {})
                 })
-            });
+            }, 'chat');
 
             if (!chatResponse.ok) {
                 const errText = await chatResponse.text();
@@ -1102,7 +1119,7 @@ app.post('/api/chat', validateApiKey, async (req, res) => {
             lastError = error;
             // Network/socket errors to DuckDuckGo also happen transiently;
             // retry them with a fresh challenge like challenge failures.
-            if (attempt < MAX_ATTEMPTS && /fetch failed|socket|ECONN|ETIMEDOUT/i.test(error.message || '')) {
+            if (attempt < MAX_ATTEMPTS && /fetch failed|socket|ECONN|ETIMEDOUT|timed out|AbortError/i.test(error.message || '')) {
                 console.warn(`Attempt ${attempt}: network error (${error.message}), retrying...`);
                 await new Promise(r => setTimeout(r, 600 * attempt));
                 continue;
@@ -1116,7 +1133,7 @@ app.post('/api/chat', validateApiKey, async (req, res) => {
         }
     }
 
-    console.error('Final API Error:', lastError);
+    console.error(`Final API Error after ${Date.now() - chatStartedAt}ms:`, lastError);
     return res.status(500).json({
         status: "error",
         message: "Backend me dikkat aayi hai bhai!",
