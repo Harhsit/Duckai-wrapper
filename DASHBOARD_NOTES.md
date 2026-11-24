@@ -877,3 +877,24 @@ Two instances from this folder: A on port 3241 with
   (unchanged public behaviour).
 - Test key / `keys.json` removed and both servers stopped after
   the tests.
+
+## How-to update — reaching the live server, fixed key vs created keys
+
+Added at Harshit's request after the Vercel deployment went live
+(https://duckai-wrapper.vercel.app/): the dashboard's "How to use your
+API key" section now opens with two new subsections before the
+four steps:
+
+- **"Reach this server — online or local"**: an external site, app
+  (e.g. Android), or server only needs the base URL + a valid key.
+  Online base URL is the live Vercel deployment
+  (dashboard at /dashboard, chat at POST /api/chat); locally the same
+  flow works with http://localhost:3000. Examples on the page still
+  auto-fill with whichever origin served the page.
+- **"Two kinds of key — which one to use"**: the fixed key
+  (DUCK_AI_API_KEY env var) is the one to use on the online/Vercel
+  deployment — it survives restarts/redeploys and the admin can
+  see/copy it from the Fixed API key panel after admin login. Created
+  keys (keys.json) are for local use (or a host with a permanent
+  disk); on serverless hosts they can be wiped on restart. Using
+  either key is identical (Authorization: Bearer / x-api-key header).
