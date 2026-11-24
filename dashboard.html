@@ -116,6 +116,7 @@
         <code class="example">{"status": "success", "model_used": "gpt-5.4-mini", "requested_model": "gpt-4o-mini", "reply": "Hello! How can I help?"}</code>
         Use the <code>reply</code> text in your site or app. If the key is wrong or revoked, you get <code>401</code> with an error message instead.</li>
     </ol>
+    <p class="sub"><strong>Personal deployments — key optional:</strong> if this server was started with <code>ALLOW_KEYLESS_CHAT=true</code>, the API key is <strong>not required</strong> at all — your app can call <code>POST /api/chat</code> with just the server address and no key header, like a private wrapper only you use (for example, your own app that only knows your Render address). Sending a valid key still works exactly as above; sending a <em>wrong</em> key still gets <code>401</code>, so leave the header out entirely to chat keyless. Note: with keyless chat on, anyone who knows the server address can use it — personal use only.</p>
 
     <h3>Change the AI model — from your own site or app</h3>
     <p>You choose the model <strong>from your external side</strong>, on every request — there is nothing to change on this server. Just set the <code>"model"</code> field in the JSON body you send to <code>POST /api/chat</code>:</p>

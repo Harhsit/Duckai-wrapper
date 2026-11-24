@@ -22,6 +22,20 @@ app.use(express.json({ limit: '10mb' }));
 // generated keys (below) still work on their own.
 const MASTER_API_KEY = process.env.DUCK_AI_API_KEY || null;
 
+// 🔓 KEYLESS CHAT (optional, personal deployments only)
+// Set ALLOW_KEYLESS_CHAT=true in the environment to make the API key
+// OPTIONAL on POST /api/chat (and the homepage AI Chat, which uses the
+// same endpoint): requests with NO key at all are then accepted, like
+// a private wrapper that only needs its server address. Requests WITH
+// a valid master/generated key keep working exactly as before in both
+// modes. A request that presents an INVALID (wrong or revoked) key is
+// still rejected with 401 even in keyless mode — remove the key header
+// entirely to chat keyless. Default (unset / anything but "true"):
+// key REQUIRED, exactly as before — safe default for public deploys.
+// ⚠️ SECURITY: with keyless chat ON, anyone who knows the server
+// address can use it. Only enable this on a personal deployment.
+const ALLOW_KEYLESS_CHAT = String(process.env.ALLOW_KEYLESS_CHAT || '').trim().toLowerCase() === 'true';
+
 // 🔐 ADMIN LOGIN (gates API-key MANAGEMENT only — not /api/chat)
 // Exactly ONE fixed admin account. The username comes from
 // ADMIN_USERNAME (default "admin"; not a secret). The password
@@ -482,6 +496,9 @@ async function getModelsForDisplay() {
 // Accepts (Bearer token or x-api-key header):
 //  (a) the master key from DUCK_AI_API_KEY, if set, and
 //  (b) any non-revoked generated key (matched by SHA-256 hash).
+// If ALLOW_KEYLESS_CHAT=true (see above), a request with NO key at
+// all is also accepted (req.apiKeyType = 'keyless'); a request that
+// presents an invalid key is still 401 in both modes.
 const validateApiKey = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const customKeyHeader = req.headers['x-api-key'];
@@ -494,6 +511,10 @@ const validateApiKey = (req, res, next) => {
     }
 
     if (!userKey) {
+        if (ALLOW_KEYLESS_CHAT) {
+            req.apiKeyType = 'keyless';
+            return next();
+        }
         return res.status(401).json({
             status: "error",
             message: "Unauthorized! Bhai galat ya missing API Key hai."
@@ -654,13 +675,13 @@ app.get('/', (req, res) => {
   <div id="viewChat" style="display:none;">
   <div class="card">
     <h1>💬 Chat with Duck AI</h1>
-    <label class="field" for="chatKey">Your API key</label>
+    <label class="field" for="chatKey">Your API key${ALLOW_KEYLESS_CHAT ? ' (optional on this server)' : ''}</label>
     <input type="password" id="chatKey" placeholder="duck-..." autocomplete="off">
-    <p class="hint">Paste your API key — create one free in the <a href="/dashboard">Create API Key tab</a>. The key is kept in this page's memory only, never saved.</p>
+    <p class="hint">${ALLOW_KEYLESS_CHAT ? 'This is a personal (keyless) deployment — the API key is <b>optional</b>: just pick a model and chat, no key needed. If you have a key you can still paste it; it is kept in this page\'s memory only, never saved.' : 'Paste your API key — create one free in the <a href="/dashboard">Create API Key tab</a>. The key is kept in this page\'s memory only, never saved.'}</p>
     <label class="field" for="chatModel">AI model — DuckAI will answer with the model you pick here</label>
     <select id="chatModel"></select>
     <div id="chatThread">
-      <div class="empty" id="chatEmpty">Ask me anything…<br><span style="font-size:13px;">Paste your key above, pick a model, and say hello.</span></div>
+      <div class="empty" id="chatEmpty">Ask me anything…<br><span style="font-size:13px;">${ALLOW_KEYLESS_CHAT ? 'Pick a model and say hello — no API key needed on this server.' : 'Paste your key above, pick a model, and say hello.'}</span></div>
     </div>
     <div id="chatChip" class="chiprow" style="display:none;">
       <span class="chip"><img id="chatChipImg" alt=""><span id="chatChipName">image</span><button type="button" id="chatChipRemove">✕ Remove</button></span>
@@ -773,12 +794,13 @@ async function loadChatModels() {
     }
   } catch(e) {}
 }
+var KEYLESS_CHAT = ${ALLOW_KEYLESS_CHAT ? 'true' : 'false'};
 async function sendChat() {
   var key = document.getElementById('chatKey').value.trim();
   var input = document.getElementById('chatInput');
   var message = input.value.trim();
   var btn = document.getElementById('chatSend');
-  if (!key) { addNotice('⚠️ Paste your API key first — create one free in the Create API Key tab (Dashboard).'); document.getElementById('chatKey').focus(); return; }
+  if (!key && !KEYLESS_CHAT) { addNotice('⚠️ Paste your API key first — create one free in the Create API Key tab (Dashboard).'); document.getElementById('chatKey').focus(); return; }
   if (!message && !chatImageDataUrl) return;
   var model = document.getElementById('chatModel').value || 'gpt-5.4-mini';
   var img = chatImageDataUrl;
@@ -790,7 +812,9 @@ async function sendChat() {
   try {
     var payload = { message: message || 'Describe this image.', model: model };
     if (img) payload.image = img;
-    var r = await fetch('/api/chat', { method: 'POST', headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    var chatHeaders = { 'Content-Type': 'application/json' };
+    if (key) chatHeaders['Authorization'] = 'Bearer ' + key;
+    var r = await fetch('/api/chat', { method: 'POST', headers: chatHeaders, body: JSON.stringify(payload) });
     var data = await r.json().catch(function(){ return {}; });
     removeTyping();
     if (r.ok) {

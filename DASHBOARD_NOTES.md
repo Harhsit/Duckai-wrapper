@@ -717,3 +717,90 @@ How each value is decided:
   alt:"Drawing a yellow five-pointed star"}`, `data_url` starts
   with `data:image`, `reply: ""` (image-only, as documented).
 - Test keys cleaned up (`keys.json` removed), server stopped.
+
+## Keyless chat — `ALLOW_KEYLESS_CHAT` (personal deployments)
+
+Added for Harshit's personal deployment pattern (like his music
+wrapper on Render): only he uses the deployment, his app knows only
+the server address, and if the host wipes `keys.json` on restart the
+chat must keep working with no key at all.
+
+### The setting
+- **Env var: `ALLOW_KEYLESS_CHAT`** — keyless mode is ON only when it
+  is set to exactly `true` (case-insensitive). Unset, or any other
+  value, means OFF.
+- **ON:** `POST /api/chat` accepts requests with **no API key at all**
+  (no `Authorization` / `x-api-key` header) and returns a real DuckAI
+  reply (`req.apiKeyType = 'keyless'`). Image input and image
+  creation go through the same endpoint, so they work keyless too.
+  Requests **with** a valid master or generated key work exactly as
+  before. The homepage AI Chat also works without a key in this mode:
+  the page is rendered with `KEYLESS_CHAT = true`, the key field is
+  labelled optional, and no key header is sent when the field is
+  empty.
+- **OFF (default):** behaviour is unchanged — no key = 401, wrong
+  key = 401. The public repo stays safe by default; keyless is
+  strictly opt-in per deployment.
+- **Invalid key in keyless mode — decision: still 401.** If a request
+  *presents* a key that is wrong or revoked, it is rejected even in
+  keyless mode; keyless applies only when no key is sent at all.
+  Rationale: a wrong/revoked credential should fail loudly instead of
+  silently downgrading to anonymous access — an app using a revoked
+  key would otherwise never notice. To chat keyless, remove the key
+  header entirely.
+- **`/api/models`:** unchanged — it was already public (no key
+  required) so external apps can discover models; no keyless logic
+  was needed there.
+- **Key management is NOT affected:** creating / listing / revoking
+  keys still requires the single admin login in both modes.
+
+### Enable it on Render
+In the Render service → **Environment**, add:
+- `ALLOW_KEYLESS_CHAT` = `true`
+- `ADMIN_USERNAME` = `admin` (optional; this is the default)
+- `ADMIN_PASSWORD` = your admin password (required for key management)
+- `DUCK_AI_API_KEY` = a master key (optional)
+
+Redeploy / restart the service after setting it. Because keyless
+chat does not depend on stored keys, a restart that wipes
+`keys.json` no longer breaks chat — generated keys created before
+the wipe stop working (their hashes are gone), but keyless chat and
+the master key keep working.
+
+### ⚠️ Security note
+With `ALLOW_KEYLESS_CHAT=true`, **anyone who knows the server
+address can use the deployment** — there is no per-user gate on
+chat. That is fine for a personal deployment only the owner uses
+(Harshit's case: his own Android app calling his own Render
+address). Do **not** enable it on a deployment you share publicly
+unless you accept that anyone can use it (and use up the upstream
+DuckAI goodwill/rate limits through your server).
+
+### Test results (local, throwaway env values only;
+### ADMIN_USERNAME=admin, ADMIN_PASSWORD=<throwaway>,
+### DUCK_AI_API_KEY=<throwaway master key>)
+Two instances from this folder: A on port 3241 with
+`ALLOW_KEYLESS_CHAT=true`, B on port 3242 with it unset (default).
+
+- A `GET /` → **200** (page rendered with `KEYLESS_CHAT = true`);
+  B `GET /` → **200** (`KEYLESS_CHAT = false`);
+  A and B `GET /dashboard` → **200**.
+- A — key created via admin login (masked `duck-...1_Rw`) for the
+  with-key tests below.
+- **Keyless ON, NO key**, `{"message":"Say hello in exactly one
+  short sentence."}` → **200**, reply **"Hello!"**,
+  `model_used: gpt-5.4-mini`.
+- **Keyless ON, NO key, `"model":"gpt-6-luna"`** → **200**, reply
+  "Hello!", **`model_used: gpt-6-luna`** (model selection works
+  keyless).
+- **Keyless ON, valid generated key** → **200**, reply "Hello!",
+  `model_used: gpt-5.4-mini` (keys still work in keyless mode).
+- Keyless ON, **invalid** key (`Bearer duck-totally-wrong-key`) →
+  **401** (the documented decision above).
+- **Keyless OFF (default), NO key** → **401** "missing API Key".
+- **Keyless OFF, valid generated key** → **200**, reply "Hello!",
+  `model_used: gpt-5.4-mini`.
+- A `GET /api/models` with no key → **200**, `"source": "live"`
+  (unchanged public behaviour).
+- Test key / `keys.json` removed and both servers stopped after
+  the tests.
