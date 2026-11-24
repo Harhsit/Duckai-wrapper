@@ -163,6 +163,32 @@ app.get('/api/admin/status', (req, res) => {
     });
 });
 
+// 🔑 FIXED (MASTER) API KEY — admin-session ONLY.
+// Returns the master key from the DUCK_AI_API_KEY environment
+// variable so the admin can see/copy it from the dashboard after
+// logging in (e.g. on Vercel, where the key lives in Settings →
+// Environment Variables and therefore survives redeploys, unlike
+// generated keys stored in keys.json). Protected by requireAdmin:
+// no admin session → 401 "Admin login required" (503 if no admin
+// password is configured), exactly like the key-management
+// endpoints. The key is NEVER sent anywhere else: it is not in
+// the dashboard page source, the homepage, or any public endpoint
+// — the dashboard fetches it from here only after admin login.
+// If no master key is configured, returns { configured: false }
+// and no key material at all.
+app.get('/api/admin/master-key', requireAdmin, (req, res) => {
+    if (!MASTER_API_KEY) {
+        return res.json({ status: "success", configured: false });
+    }
+    return res.json({
+        status: "success",
+        configured: true,
+        api_key: MASTER_API_KEY,
+        masked_key: '...' + MASTER_API_KEY.slice(-4),
+        last4: MASTER_API_KEY.slice(-4)
+    });
+});
+
 // 🗝️ GENERATED API KEYS (OpenAI-style)
 // Keys are created from the dashboard (/dashboard) or POST /api/keys.
 // Only a SHA-256 hash of each key is stored in keys.json — never the

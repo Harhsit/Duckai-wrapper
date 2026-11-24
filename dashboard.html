@@ -78,6 +78,18 @@
     <button class="revoke" id="adminLogoutBtn" type="button" style="margin-left:auto;">Logout</button>
   </div>
 
+  <div class="card" id="masterKeyCard">
+    <h2>Fixed API key</h2>
+    <p class="sub">Your fixed (master) API key — the one set in the server's <code>DUCK_AI_API_KEY</code> environment variable. It never changes unless you change that setting, so you can use it in your own sites and apps anytime. Only you can see it, here, after admin login.</p>
+    <div id="masterKeyRow" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;">
+      <code id="masterKeyValue" style="font-size:15px;word-break:break-all;"></code>
+      <button class="revoke" id="masterKeyToggle" type="button">Show</button>
+      <button class="revoke" id="masterKeyCopy" type="button">Copy</button>
+    </div>
+    <p id="masterKeyNote" class="sub" style="display:none;margin:0;">No fixed key configured — set <code>DUCK_AI_API_KEY</code> in your server environment (e.g. Vercel → Settings → Environment Variables).</p>
+    <p id="masterKeyError" style="display:none;color:#b00020;font-size:13.5px;margin:10px 0 0;"></p>
+  </div>
+
   <div class="card">
     <h2>Create a new key</h2>
     <input type="text" id="label" placeholder="Key label, e.g. My website">
@@ -496,7 +508,7 @@ async function checkAdminStatus() {
   try {
     const r = await fetch('/api/admin/status');
     const data = await r.json();
-    if (data.logged_in) { showAdminArea(); loadKeys(); }
+    if (data.logged_in) { showAdminArea(); loadKeys(); loadMasterKey(); }
     else showAdminLogin(data.admin_configured === false ? 'Admin password is not configured on this server — key management is disabled until the owner sets it.' : null);
   } catch (e) { showAdminLogin('Could not reach the server: ' + e.message); }
 }
@@ -514,6 +526,7 @@ async function doAdminLogin() {
       document.getElementById('adminPass').value = '';
       showAdminArea();
       loadKeys();
+      loadMasterKey();
     } else {
       err.textContent = data.message || ('Login failed (HTTP ' + r.status + ')');
       err.style.display = '';
@@ -529,7 +542,57 @@ document.getElementById('adminPass').addEventListener('keydown', (e) => { if (e.
 document.getElementById('adminUser').addEventListener('keydown', (e) => { if (e.key === 'Enter') doAdminLogin(); });
 document.getElementById('adminLogoutBtn').addEventListener('click', async () => {
   try { await fetch('/api/admin/logout', { method: 'POST' }); } catch (e) {}
+  masterKeyFull = null;
+  masterKeyShown = false;
   showAdminLogin();
+});
+
+// 🔑 Fixed (master) API key panel — the key is fetched from the
+// admin-only GET /api/admin/master-key endpoint AFTER login. It is
+// never present in this page's source. Shown masked by default
+// (bullets + last 4) with a Show/Hide toggle and a Copy button.
+var masterKeyFull = null;
+var masterKeyShown = false;
+function renderMasterKey() {
+  const row = document.getElementById('masterKeyRow');
+  const note = document.getElementById('masterKeyNote');
+  const val = document.getElementById('masterKeyValue');
+  const toggle = document.getElementById('masterKeyToggle');
+  if (!masterKeyFull) { row.style.display = 'none'; return; }
+  note.style.display = 'none';
+  row.style.display = 'flex';
+  val.textContent = masterKeyShown ? masterKeyFull : ('••••••••' + masterKeyFull.slice(-4));
+  toggle.textContent = masterKeyShown ? 'Hide' : 'Show';
+}
+async function loadMasterKey() {
+  const note = document.getElementById('masterKeyNote');
+  const err = document.getElementById('masterKeyError');
+  err.style.display = 'none';
+  try {
+    const r = await fetch('/api/admin/master-key');
+    if (r.status === 401) { showAdminLogin('Your admin session has ended — please log in again.'); return; }
+    const data = await r.json();
+    if (data && data.configured && data.api_key) {
+      masterKeyFull = data.api_key;
+      masterKeyShown = false;
+      renderMasterKey();
+    } else {
+      masterKeyFull = null;
+      document.getElementById('masterKeyRow').style.display = 'none';
+      note.style.display = '';
+    }
+  } catch (e) {
+    err.textContent = 'Could not load the fixed key: ' + e.message;
+    err.style.display = '';
+  }
+}
+document.getElementById('masterKeyToggle').addEventListener('click', () => {
+  masterKeyShown = !masterKeyShown;
+  renderMasterKey();
+});
+document.getElementById('masterKeyCopy').addEventListener('click', async () => {
+  if (!masterKeyFull) return;
+  try { await navigator.clipboard.writeText(masterKeyFull); alert('Copied!'); } catch(e) {}
 });
 
 async function loadKeys() {

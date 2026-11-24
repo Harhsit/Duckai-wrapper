@@ -80,6 +80,79 @@ ADMIN_USERNAME + ADMIN_PASSWORD set via environment for the test)
   reveals the create form and the keys list. PASS.
 - Test keys cleaned up (`keys.json` removed), servers stopped.
 
+## Fixed (master) API key in the dashboard — admin only (added Nov 2026)
+
+User ask: the deployment will run on Vercel with ONE fixed API
+key (the master key). That key must be visible in the dashboard
+so the admin can copy it anytime after logging in.
+
+### Endpoint — `GET /api/admin/master-key` (in `index.js`)
+- Protected by the **same admin session** as key management
+  (`requireAdmin` middleware): no valid admin session → `401
+  {"status":"error","message":"Admin login required"}`; if
+  `ADMIN_PASSWORD` is not configured → `503`, exactly like the
+  other management endpoints.
+- With a session and `DUCK_AI_API_KEY` set → `200
+  {"status":"success","configured":true,"api_key":"<master key>",
+  "masked_key":"...<last4>","last4":"<last4>"}`.
+- With a session but **no** `DUCK_AI_API_KEY` set → `200
+  {"status":"success","configured":false}` — no key material.
+- The master key is sent **nowhere else**: it is not in the
+  dashboard page source, the homepage, `/api/models`, or any
+  unauthenticated endpoint (verified by grep in the tests below).
+  The dashboard fetches it from this endpoint only **after**
+  admin login.
+
+### Dashboard UI (Create API Key tab, inside the admin area)
+- New **"Fixed API key"** panel at the top of the post-login
+  area. On login (and on page load with a live session) the page
+  calls the endpoint; the key is shown **masked by default**
+  (`••••••••` + last 4) with a **Show/Hide** toggle and a
+  **Copy** button.
+- If no fixed key is configured, the panel instead shows:
+  "No fixed key configured — set `DUCK_AI_API_KEY` in your
+  server environment (e.g. Vercel → Settings → Environment
+  Variables)."
+- Logout clears the key from page memory.
+
+### Vercel setup (why the fixed key is never forgotten)
+Set these as **Vercel → Project → Settings → Environment
+Variables**, then redeploy:
+- `DUCK_AI_API_KEY` = your one fixed API key
+- `ADMIN_USERNAME` = `admin` (optional; this is the default)
+- `ADMIN_PASSWORD` = your admin password
+
+The fixed key lives in Vercel's settings, **not** in a file on
+the server, so it survives restarts and redeploys — unlike
+generated keys, whose hashes sit in the local `keys.json` file
+that serverless/ephemeral hosts can wipe. Use the fixed key in
+your own apps; treat generated keys on Vercel as disposable.
+
+### Test results (local, throwaway env values only;
+### ADMIN_USERNAME=admin, ADMIN_PASSWORD=<throwaway>,
+### DUCK_AI_API_KEY=<throwaway fixed key, masked ...WXYZ>)
+Instance A on port 3251 with the fixed key set; instance B on
+port 3252 **without** `DUCK_AI_API_KEY`.
+
+- A: `GET /api/admin/master-key` **without** login → **401**
+  "Admin login required".
+- A: login with wrong password → **401**; with the test admin
+  password → **200**; then `GET /api/admin/master-key` → **200**,
+  `configured: true`, key returned (masked `...WXYZ` here).
+- A: `POST /api/chat` with that fixed key → **200**, reply
+  "Hello!", `model_used: gpt-5.4-mini`.
+- A: `GET /dashboard` → **200**; the served HTML contains the
+  Fixed API key panel (`masterKeyCard`) and the endpoint path,
+  and a grep of the served dashboard HTML, the homepage, and
+  `/api/models` for the test fixed key found **0 matches** —
+  the key is not embedded anywhere public.
+- B (no fixed key): login → **200**; `GET /api/admin/master-key`
+  → **200** `{"configured": false}`, no key leaked.
+- Regression on A: `POST /api/keys` with session → **201**
+  (generated key masked `duck-...gKHQ`); `POST /api/chat` with
+  **no** key (keyless mode off) → **401**, as before.
+- Test `keys.json` removed and both servers stopped after tests.
+
 ## Tab switch + liquid-glass top nav (added Nov 2026)
 
 User ask: the dashboard's default view should have a switch between
